@@ -34,8 +34,7 @@
 
 
 */
-
-#include <pthread.h>
+#include "colas.h"
 
 /*
   semaphore cuenta con dos elementos.
@@ -47,7 +46,7 @@
 struct semaphore_t{
   int valor;
   pthread_mutex_t pactual;
-  cola precesos;
+  colas precesos;
 }*semaphore_t;
 
 typedef struct semaphore_t sem_t;
