@@ -38,13 +38,10 @@
 /*
   semaphore cuenta con tres elementos.
   Un entero que representa el estado del semáforo,
-  una variable mutex(control_valor)que controla el acceso al contador.
-  un mutex, control_valor es un mutex que se usa para 
+  una variable mutex, control_valor, que se usa para 
   controlar el acceso y modificación de la variable valor. 
-  un mutex control_procesos para bloquear y desbloquear 
-  procesos.
-
-
+  una variable mutex, control_procesos, que se usa  para bloquear 
+  y desbloquear procesos.
 
 */
 
