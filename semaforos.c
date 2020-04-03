@@ -11,8 +11,7 @@
   _Cuando un hilo decrementa el valor del semáforo, si este es negativo, el hilo 
   se bloquea a sí mismo y no puede continuar hasta que otro hilo incremente 
   el semáforo.
-  _Cuando un hilo aumenta el semáforo, si hay un hilo esperando este se activa. 
-  Si hay varios esperando alguno se activa .
+  
 
   Cuando un hilo se bloquea a si mismo significa que avisa al planificador que 
   este ya no puede continuar. El planificador entonces lo detiene de continuar 
@@ -32,69 +31,98 @@
   Si es cero, significa que no hay ningún hilo esperando, pero si alguien lo 
   decrementa este se bloqueará.
 
-
 */
-#include "colas.h"
+
+#include <pthread.h>
 
 /*
-  semaphore cuenta con dos elementos.
-  Un contador, que siempre vale >= 0.
-  un pthread_mutex_t que indica el proceso actual.
-  Una cola de procesos inicialmente vacía.
+  semaphore cuenta con tres elementos.
+  Un entero que representa el estado del semáforo,
+  una variable mutex(control_valor)que controla el acceso al contador.
+  un mutex, control_valor es un mutex que se usa para 
+  controlar el acceso y modificación de la variable valor. 
+  un mutex control_procesos para bloquear y desbloquear 
+  procesos.
+
+
 
 */
-struct semaphore_t{
+
+struct semaphore_t {
   int valor;
-  pthread_mutex_t pactual;
-  colas precesos;
-}*semaphore_t;
-
-typedef struct semaphore_t sem_t;
-
-
-sem_t crear_sem()
-{ 
-  sem_t sem = malloc(sizeof(semaphore_t));
-  return sem;
+  pthread_mutex_t control_valor;
+  pthread_mutex_t control_procesos;
 }
+
+typedef struct semapfore_t sem_t;
+
+
+/*
+  NOTA: las funciones retornaran 1 si funcionaron correctamente, en casa contrario 0.
+*/
 
 
 /* Función de creación de Semáforo */
 int sem_init(sem_t *sem, int init){
+  int a;
   sem->valor = valor; 
-  sem->procesos = NULL;
+  pthread_mutex_t control;
+  pthread_mutex_t procesos;
+  a = pthread_mutex_init(&control,NULL);
+  a += pthread_mutex_init(&procesos,NULL);
+  sem->control_valor = control;
+  sem->control_procesos = procesos;
+  if(a == 0) return 1;
+  return 0;
 }
 
 
-/* Incremento del semáforo. */
+/* 
+  Incremento del semáforo. 
+  Cuando un hilo aumenta el semáforo, si hay un hilo esperando
+  este se activa. Si hay varios esperando alguno se activa .
+*/
 int sem_incr(sem_t *sem)
-{
-  if(!cola_es_vacia(sem->procesos)) 
-    cola_desencolar(sem->procesos);
+{ 
+  int a;
+  a = pthread_mutex_lock(&sem->control_valor);
   sem->valor++;
+  a += pthread_mutex_unlock(&sem->control_valor);
+  if(!(sem->valor > 0)) a+= pthread_mutex_lock(&sem->control_procesos);
+  
+  if(a == 0) return 1;
+  return 0;
 }
 
 
-/* Decremento del semáforo. Notar que es una función que puede llegar a bloquear
-   el proceso.*/
+/*
+  Cuando un hilo decrementa el valor del semáforo, si este es
+  negativo, el hilo se bloquea a sí mismo y no puede continuar 
+  hasta que otro hilo incremente el semáforo.
+   
+  Decremento del semáforo. Notar que es una función que puede llegar a bloquear
+  el proceso.
+*/
 int sem_decr(sem_t *sem)
-{
-  if(sem->valor <= 0) {
-  	proceso_bloqueado(sem->pactual);
-    cola_encolar(sem->procesos,sem->pactual);
-  }
+{ 
+  int a;
+  a = pthread_mutex_lock(&sem->control_valor);
   sem->valor-=1;
+  a += pthread_mutex_unlock(&sem->control_valor); 
+  if(sem->valor < 0) a += pthread_mutex_lock(&sem->control_procesos);
+
+  if(a == 0) return 1;
+  return 0;
 }
+
 
 /* Destrucción de un semáforo */
 int sem_destroy(sem_t *sem){
-	cola_liberar(sem->proceosos);
-	free(sem);
+  int a ;
+  a = pthread_mutex_destroy(&sem->control_valor);
+  a += pthread_mutex_destroy(&sem->control_procesos);
+  free(sem);
+  if(a == 0) return 1;
+  return 0;
 }
 
-/*
-  preguntas: 
-  *como hacer las funciones bloquear y desbloquear procesos.
-  *porque las funciones retornan un entero.
-
-*/
